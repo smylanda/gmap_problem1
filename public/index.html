@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    
+    <style type="text/css">
+      html { 
+      	height: 100% 
+      }
+      
+      body { 
+      	height: 100%; 
+      	margin: 0; 
+      	padding: 0 
+      }
+      
+      #map-canvas { 
+      	height: 100% 
+      }
+    </style>
+    
+    <script type="text/javascript"
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB_xUeqkYsdNFRME4_9JMzQ-EAE1qRBOqI">
+    </script>
+    
+    <script type="text/javascript" src="/js/jquery-1.9.1.js"></script>
+    
+    <script type="text/javascript">
+    
+    	var map, US;
+    	var zoomVsName = {
+       		4: "state",
+       		5: "city",
+       		6: "zip",
+       		7: "zip",
+       		8: "zip",
+       		9: "zip"
+        };
+    	
+    	var Icons = {
+        	"city": "http://maps.google.com/mapfiles/ms/icons/green-dot.png",
+    		"state": "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+    		"zip": "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+    	};
+    	
+		function initialize() {
+        	var mapOptions = {
+          		center: new google.maps.LatLng(38.9953378, -94.9524076),
+          		zoom: 3
+        	};
+        	map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
+        	
+        	us();
+
+        	/*google.maps.event.addListener(map, 'zoom_changed', changeevt);*/
+        	
+       		var t;
+        	google.maps.event.addListener(map, 'bounds_changed', function() {
+        		if(t) {
+        			clearTimeout(t);
+        		}
+        		t = setTimeout(changeEvt, 100);
+        	});
+        			
+	       	function changeEvt() {
+	       		var zoom = map.getZoom();
+	       		if(zoom == 2) {
+	       			clearMarkers();
+	       			US.setMap(map);
+	           		return;
+	       		}
+	       		
+	       		var name = zoomVsName[zoom];
+	       		if(name) {
+	       			US.setMap(null);
+	       			reload(name);
+	       		}
+	      	}
+		}
+     
+      	google.maps.event.addDomListener(window, 'load', initialize);
+      	
+      	var markers;
+      	
+    	function reload(name) {
+    		var b = map.getBounds();
+    		var p1 = b.getSouthWest(), p2 = b.getNorthEast();
+    		
+    		var x1 = p1.lat(), y1 = p1.lng();
+    		var x2 = p2.lat(), y2 = p2.lng();
+    		
+    		var url = "/" + name + "?x1=" + x1 + "&y1=" + y1 + "&x2=" + x2 + "&y2=" + y2;
+    		$.ajax({
+    			url: url,
+    			type: "GET",
+    			success: function(resp) {
+    				if(resp.status == -1) {
+    					//alert(resp.err);
+    					return;
+    				}
+    				clearMarkers();
+    				//showRect();
+    				
+    				var icon1 = Icons[name]
+    				markers = [];
+    				$.each(resp.result, function(i, row) {
+    					var m = new google.maps.Marker({
+    						position: new google.maps.LatLng(row[0], row[1]),
+    						title: row[2],
+    						icon: icon1
+    					});
+    					addClickEvt(m);
+    					m.setMap(map);
+    					markers.push(m);
+    				});
+    			}
+    		});
+    	}
+    	
+    	infoWnd = new google.maps.InfoWindow({
+    	      content: "Count"
+    	});
+    	
+    	function addClickEvt(m) {
+			google.maps.event.addListener(m, "click", function() {
+				infoWnd.content = m.title + ", " + m.position;
+				infoWnd.open(map, m);
+			});    		
+    	}
+    	
+    	function clearMarkers() {
+			if(markers) {
+				$.each(markers, function(i, m) {
+					m.setMap(null);
+				});
+				markers = null;
+			}    		
+    	}
+    	    	
+    	
+    	function us() {
+    		var loc = new google.maps.LatLng(38.9953378, -94.9524076);
+    		
+			US = new google.maps.Circle({
+			      strokeColor: '#FF0000',
+			      strokeOpacity: 0.8,
+			      strokeWeight: 2,
+			      fillColor: '#FF0000',
+			      fillOpacity: 0.35,
+			      map: map,
+			      center: loc,
+			      radius: 2000000
+		  	});
+			
+    	}
+      	
+	</script>
+  </head>
+  
+  <body>
+    <div id="map-canvas"/>
+  </body>
+</html>
