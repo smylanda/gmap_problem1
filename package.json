@@ -1,6 +1,6 @@
 {
-	"name": "CK12",
-	"description": "CK 12 Graph Geo Problem",
+	"name": "gmap_problem1",
+	"description": "Graph Geo Problem",
 	"author": "Subburajan Mayilandan",
 	"version": "0.0.1",
 	"private": false,
